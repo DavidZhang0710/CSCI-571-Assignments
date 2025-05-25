@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Search</title>
+    <link rel="stylesheet" href="format.css">
+</head>
+<body>
+    <header>
+        <p style="padding-left: 20px;">Artist Search</p>
+    </header>
+    <div class="content">
+        <div class="search-container">
+            <form onsubmit="fetchData(); return false;">
+                <button type="submit" class="search-icon-button">
+                  <img src="./images/search_icon.png" class="search-icon">
+                </button>
+                <input type="text" id="query" class="search-input" placeholder="Please enter an artist name." required>
+                <img src="./images/clear_icon.png" class="clear-icon" onclick="clearInput()">
+            </form>
+        </div>
+    
+        <div id="loading1" style="display: none; text-align: center; font-size: 18px;">
+            <img src="./images/loading.gif" width="50">
+        </div>
+    
+        <p id="results"></p>
+    
+        <div id="loading2" style="display: none; text-align: center; font-size: 18px;">
+            <img src="./images/loading.gif" width="50">
+        </div>
+    
+        <p id="details"></p>    
+    </div>
+
+    <script>
+        function clearInput() {
+            document.getElementById("query").value = "";
+        }
+
+        function fetchData() {
+            let query = document.getElementById("query").value.trim();
+            let errorMessage = document.getElementById("search-error-message");
+            
+            if (!query) {
+                errorMessage.style.display = "block";
+                return;
+            }
+
+            document.getElementById("details").style.display = 'none';
+            document.getElementById("loading1").style.display = 'block';
+
+            let params = new URLSearchParams();
+            params.append("query", query);
+            
+            let url = `https://backend-dot-project-1-450723.uc.r.appspot.com/api/search?${params.toString()}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    document.getElementById("loading1").style.display = 'none';
+                    showResults(data)
+                })
+                .catch(error => console.error("Error:", error));
+        }
+
+        function showResults(data) {
+            let resultsContainer = document.getElementById("results");
+            let detailsContainer = document.getElementById("details");
+            resultsContainer.innerHTML = "";
+            detailsContainer.innerHTML = "";
+
+            if (!data._embedded?.results?.length) {
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>No results found.</p>
+                    </div>
+                `;
+                resultsContainer.style.display = 'flex';
+                return;
+            }
+
+            let list = document.createElement("div");
+            list.style.display = "flex";
+            list.style.gap = "2px";
+            list.id = "item-list";
+
+            data._embedded.results.forEach((item, index) => {
+                let listItem = document.createElement("div");
+                listItem.classList.add("list-item");
+
+                let thumbnailContainer = document.createElement("div");
+                thumbnailContainer.classList.add("thumbnail-container");
+                
+                let thumbnail = document.createElement("img");
+                thumbnail.src = item._links?.thumbnail?.href;
+                if (thumbnail.src.endsWith("/assets/shared/missing_image.png")) {
+                    thumbnail.src = "./images/artsy_logo.svg";
+                }
+                thumbnail.alt = item.title;
+                thumbnailContainer.appendChild(thumbnail);
+                
+                let title = document.createElement("p");
+                title.textContent = item.title;
+                
+                listItem.appendChild(thumbnailContainer);
+                listItem.appendChild(title);
+                list.appendChild(listItem);
+
+                listItem.addEventListener("click", () => {
+                    document.querySelectorAll(".list-item").forEach(item => {
+                        item.classList.remove("selected");
+                    });
+                    listItem.classList.add("selected");
+                    document.getElementById("details").style.display = 'none';
+                    document.getElementById("loading2").style.display = 'block';
+                    details = fetchDetails(item._links.self.href);
+                });
+            });
+            resultsContainer.innerHTML = "";
+            resultsContainer.appendChild(list);
+            resultsContainer.style.display = 'flex';
+        }
+
+        function fetchDetails(detail_url) {
+                fetch('https://backend-dot-project-1-450723.uc.r.appspot.com/api/details', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: detail_url })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    document.getElementById("loading2").style.display = 'none';
+                    showDetails(data)
+                })
+                .catch(error => console.error("Error:", error));
+        }
+
+        function showDetails(details) {
+            let detailsContainer = document.getElementById("details");
+            default_text = `No Biography${details.birthday ? "" : ", No Birth Year"}${details.deathday ? "" : ", No Death Year"}`
+            detailsContainer.innerHTML = `
+                <h2 style="text-align: center; margin-bottom: 5px;">${details.name} (${details.birthday || ""}-${details.deathday || ""})</h2>
+                <h4 style="text-align: center; margin-top: 0; margin-bottom: 0">${details.nationality}</h4>
+                <p style="text-align: ${details.biography ? "justify" : "center"};">${details.biography || default_text}</p>
+            `;
+            detailsContainer.style.display = 'block';
+        }
+    </script>
+
+    <footer>
+        <a href="https://www.artsy.net" target="_blank" style="text-decoration: none";>
+            <p style="font-size: 14px; color: #ffffff;">Powered by <img src="./images/artsy_logo.svg" class="artsy-icon" width = 16px height=16px>Artsy</p>
+        </a>
+    </footer>
+</body>
+</html>

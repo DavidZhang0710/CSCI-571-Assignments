@@ -1,0 +1,13 @@
+service: frontend
+runtime: python39
+handlers:
+  - url: /images
+    static_dir: images
+
+  - url: /(.*\.css)
+    static_files: \1
+    upload: (.*\.css)
+
+  - url: /(.*)
+    static_files: index.html
+    upload: index.html

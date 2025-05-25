@@ -1,0 +1,15 @@
+service: backend
+runtime: python39
+entrypoint: gunicorn -b :$PORT app:app
+
+env_variables:
+  FLASK_ENV: 'production'
+  ARTSY_API_URL: "https://api.artsy.net/api/search"
+  ARTSY_AUTH_URL: "https://api.artsy.net/api/tokens/xapp_token"
+  ARTSY_AUTH_ID: "54669836254db2195fbd"
+  ARTSY_AUTH_SECRET: "e2d4bcdc59135170457c3760681a0a93"
+
+handlers:
+  - url: /api/.*
+    script: auto
+    secure: always
